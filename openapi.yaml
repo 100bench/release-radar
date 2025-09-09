@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  title: ReleaseRadar API
+  description: This is the API for ReleaseRadar, a GitHub releases tracker with Telegram notifications.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+paths:
+  /signup:
+    post:
+      summary: User Sign Up
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: User successfully signed up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+        '409':
+          description: User already exists
+        '500':
+          description: Internal server error
+  /repos:
+    post:
+      summary: Add a new GitHub repository to track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userID
+                - owner
+                - name
+              properties:
+                userID:
+                  type: string
+                  format: uuid
+                  example: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+                owner:
+                  type: string
+                  example: octocat
+                name:
+                  type: string
+                  example: Spoon-Knife
+      responses:
+        '200':
+          description: Repository successfully added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repo'
+        '400':
+          description: Invalid input
+        '404':
+          description: User not found
+        '409':
+          description: Repository already being tracked
+        '500':
+          description: Internal server error
+    get:
+      summary: List all tracked repositories for a user
+      parameters:
+        - in: query
+          name: userID
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to list repositories for
+      responses:
+        '200':
+          description: Successfully retrieved list of repositories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Repo'
+        '400':
+          description: Invalid User ID
+        '500':
+          description: Internal server error
+  /repos/{repoID}/subscribe:
+    post:
+      summary: Subscribe a user to a repository's releases on a specific channel
+      parameters:
+        - in: path
+          name: repoID
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the repository to subscribe to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userID
+                - channel
+              properties:
+                userID:
+                  type: string
+                  format: uuid
+                  example: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+                channel:
+                  type: string
+                  example: some_telegram_chat_id
+      responses:
+        '200':
+          description: User successfully subscribed to repository
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          description: Invalid input
+        '404':
+          description: User or Repository not found
+        '409':
+          description: Already subscribed
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Repo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: b1cde0f1-1234-5678-90ab-cdef01234567
+        userID:
+          type: string
+          format: uuid
+          example: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+        owner:
+          type: string
+          example: octocat
+        name:
+          type: string
+          example: Spoon-Knife
+        etag:
+          type: string
+          example: W/"64e0a7a0f7e1b5c2d3a4b5c6d7e8f9a0"
+        last_checked_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        repoID:
+          type: string
+          format: uuid
+        userID:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          example: some_telegram_chat_id
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

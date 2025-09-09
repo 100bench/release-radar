@@ -1,0 +1,41 @@
+# Бинарные файлы
+/bin
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Модули Go
+/vendor
+
+# Секреты и локальные конфиги
+.env
+*.key
+*.pem
+*.crt
+
+# Файлы IDE и редакторов
+.idea/
+.vscode/
+*.swp
+*~
+#*#
+
+# Сгенерированные файлы Swagger
+/docs/swagger.json
+/docs/swagger.yaml
+/docs/docs.go
+
+# Файлы инструментов
+coverage.out
+profile.out
+
+# Временные файлы баз данных и кеша
+*.db
+*.sqlite
+/data/
+*.rdb
+
+# Docker
+# Игнорировать временные файлы, созданные Docker. 
+# Файлы Dockerfile и docker-compose.yml должны быть в Git.

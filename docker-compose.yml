@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: releaseradar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d/migrations
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-HEALHTCHECK", "pg_isready", "-U", "user", "-d", "releaseradar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: build/Dockerfile.api
+      args:
+        GO_VERSION: 1.22
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      RR_LOG_LEVEL: info
+      RR_HTTP_PORT: 8080
+      RR_POSTGRES_DSN: postgresql://user:password@postgres:5432/releaseradar?sslmode=disable
+      RR_REDIS_ADDR: redis:6379
+      RR_GITHUB_TOKEN: ${GITHUB_TOKEN}
+      RR_TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: build/Dockerfile.worker
+      args:
+        GO_VERSION: 1.22
+    restart: always
+    environment:
+      RR_WORKER_LOG_LEVEL: info
+      RR_WORKER_POSTGRES_DSN: postgresql://user:password@postgres:5432/releaseradar?sslmode=disable
+      RR_WORKER_REDIS_ADDR: redis:6379
+      RR_WORKER_GITHUB_TOKEN: ${GITHUB_TOKEN}
+      RR_WORKER_TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      RR_WORKER_POLLER_INTERVAL_MINUTES: 1
+      RR_WORKER_NOTIFIER_INTERVAL_SECONDS: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
