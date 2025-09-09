@@ -1,6 +1,20 @@
-# ReleaseRadar
+# Release-Radar
 
-ReleaseRadar — это трекер релизов GitHub с уведомлениями в Telegram.
+[![Go](https://img.shields.io/github/go-mod/go-version/100bench/release-radar?style=flat-square)](https://go.dev/)
+[![License](https://img.shields.io/github/license/100bench/release-radar?style=flat-square)](LICENSE)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/100bench/release-radar/ci.yml?branch=main&style=flat-square)](https://github.com/100bench/release-radar/actions/workflows/ci.yml)
+
+Release-Radar — трекер релизов GitHub → уведомления в Telegram.
+Стек: Go, Gin, Postgres, Redis, Docker, Prometheus, OTEL. Worker+API, ETag, идемпотентность.
+
+**Быстрый старт:**
+```bash
+cp .env.example .env && docker-compose up --build -d
+```
+Через 10–20 сек сервисы будут готовы; проверьте `/healthz`.
+**API:** `http://localhost:8080/swagger/index.html` | Health: `/healthz` | Metrics: `:8080/metrics`
+
+**Клонировать:** `git clone https://github.com/100bench/release-radar.git && cd release-radar`
 
 ## Возможности
 
@@ -22,75 +36,31 @@ ReleaseRadar — это трекер релизов GitHub с уведомлен
 ├── workflows/
     └── ci.yml
 cmd/
-├── api/
-│   └── main.go         # Точка входа API-сервиса
-└── worker/
-    └── main.go       # Точка входа Worker-сервиса
-internal/
-├── adapter/
-│   ├── cache/
-│   │   └── redis.go    # Реализация кэша на Redis
-│   ├── github/
-│   │   ├── client.go   # Интерфейс GitHub-клиента
-│   │   ├── github.go   # Реализация GitHub-клиента
-│   │   └── mock.go     # Мок GitHub-клиента для тестирования
-│   ├── http/
-│   │   └── handler.go  # HTTP-обработчики для API
-│   ├── persistence/
-│   │   ├── errors.go   # Пользовательские ошибки слоя персистентности
-│   │   ├── postgres.go # Реализация PostgreSQL через GORM
-│   │   ├── redis.go    # Реализация хранилища идемпотентности на Redis
-│   │   └── repository.go # Интерфейсы репозиториев
-│   └── telegram/
-│       ├── client.go   # Интерфейс Telegram-клиента
-│       ├── mock.go     # Мок Telegram-клиента для тестирования
-│       └── telegram.go # Реализация Telegram-клиента
-├── domain/
-│   └── models.go       # Основные сущности/модели данных
-└── usecase/
-    ├── notifier.go     # Реализация варианта использования для уведомлений
-    ├── poller.go       # Реализация варианта использования для опроса релизов
-    ├── repo.go         # Реализация варианта использования для управления репозиториями
-    ├── subscription.go # Реализация варианта использования для управления подписками
-    └── usecase.go      # Интерфейсы вариантов использования
-migrations/
-└── 000001_initial_schema.up.sql # Начальная миграция схемы базы данных
-pkg/
-├── idempotency/
-│   └── idempotency.go  # Менеджер идемпотентности
-├── logger/
-│   └── logger.go       # Структурированный логгер (Zap)
-├── otel/
-│   └── otel.go         # Заглушки для трассировки OpenTelemetry
-└── retry/
-    └── retry.go        # Механизм повторных попыток с экспоненциальной задержкой
-build/
-├── Dockerfile.api      # Dockerfile для API-сервиса
-└── Dockerfile.worker   # Dockerfile для Worker-сервиса
-docs/
-├── docs.go             # Сгенерированный код документации Swagger
-├── swagger.json
-└── swagger.yaml
-docker-compose.yml      # Конфигурация Docker Compose
-Makefile                # Команды для сборки, тестирования, запуска и работы с Docker
-openapi.yaml            # Спецификация OpenAPI 3.0
-prometheus.yml          # Конфигурация Prometheus
-seed.sql                # SQL-данные для инициализации
-.env.example            # Пример переменных окружения
-go.mod
-go.sum
-README.md
+├── api/            # Точка входа API-сервиса
+└── worker/         # Точка входа Worker-сервиса
+internal/           # Внутренняя логика приложения
+├── adapter/        # Внешние адаптеры (GitHub, Telegram, PostgreSQL, Redis)
+├── domain/         # Основные сущности/модели данных
+└── usecase/        # Варианты использования/бизнес-логика
+migrations/         # Миграции базы данных
+pkg/                # Общие утилиты и библиотеки
+build/              # Dockerfile'ы для сборки сервисов
+docs/               # Документация OpenAPI/Swagger
+docker-compose.yml  # Конфигурация Docker Compose
+Makefile            # Скрипты для сборки, тестирования и запуска
+openapi.yaml        # Спецификация OpenAPI 3.0
+.env.example        # Пример переменных окружения
 ```
 
 ## Быстрый старт
 
-Чтобы быстро запустить ReleaseRadar для разработки:
+Чтобы быстро запустить Release-Radar для разработки:
 
 1.  **Клонируйте репозиторий:**
 
     ```bash
-    git clone https://github.com/USER/releaseradar.git
-    cd releaseradar
+    git clone https://github.com/100bench/release-radar.git
+    cd release-radar
     ```
 
 2.  **Установите `golangci-lint` и `swag`:**
@@ -105,6 +75,8 @@ README.md
     ```bash
     swag init -g cmd/api/main.go
     ```
+    <br/>
+    *Примечание: `openapi.yaml` является основной, вручную поддерживаемой спецификацией OpenAPI. `swag init` используется для генерации документации Swagger UI из комментариев в коде, чтобы обеспечить визуализацию API.*
 
 4.  **Скопируйте пример переменных окружения:**
 
@@ -120,6 +92,7 @@ README.md
     ```
 
     Это запустит PostgreSQL, Redis, API-сервис, Worker-сервис и Prometheus.
+    Через 10–20 сек сервисы будут готовы; проверьте `/healthz`.
 
 6.  **Доступ к API:**
 
@@ -127,9 +100,25 @@ README.md
     -   **Swagger UI:** `http://localhost:8080/swagger/index.html`
     -   **Prometheus:** `http://localhost:9090`
 
+### Примеры API запросов:
+
+```bash
+# добавить репозиторий
+curl -X POST http://localhost:8080/api/v1/repos -d '{"full_name":"golang/go"}' -H 'Content-Type: application/json'
+# подписка на уведомления в Telegram
+curl -X POST http://localhost:8080/api/v1/subscriptions -d '{"repo_id":1,"channels":["telegram"]}' -H 'Content-Type: application/json'
+```
+
 ## Конфигурация
 
-ReleaseRadar использует переменные окружения для конфигурации. См. `.env.example` для списка настраиваемых параметров.
+Ключевые переменные окружения:
+*   `RR_GITHUB_TOKEN`: токен доступа GitHub (scopes: `public_repo`).
+*   `RR_TELEGRAM_BOT_TOKEN`: токен вашего бота Telegram.
+*   `RR_POSTGRES_DSN`: строка подключения к PostgreSQL.
+*   `RR_REDIS_ADDR`: адрес сервера Redis.
+
+Полный список настроек см. в файле `.env.example`.
+Release-Radar использует переменные окружения для конфигурации. См. `.env.example` для списка настраиваемых параметров.
 
 ## Разработка
 
@@ -137,7 +126,3 @@ ReleaseRadar использует переменные окружения для
 -   **Тестирование:** `make test`
 -   **Линтинг:** `make lint`
 -   **Локальный запуск:** `make run` (запускает API и Worker в фоновом режиме)
-
-## Лицензия
-
-Этот проект лицензирован по лицензии Apache 2.0.
