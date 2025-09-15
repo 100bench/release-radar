@@ -1,9 +1,5 @@
 # Release-Radar
 
-[![Go](https://img.shields.io/github/go-mod/go-version/100bench/release-radar?style=flat-square)](https://go.dev/)
-[![License](https://img.shields.io/github/license/100bench/release-radar?style=flat-square)](LICENSE)
-[![CI Status](https://img.shields.io/github/actions/workflow/status/100bench/release-radar/ci.yml?branch=main&style=flat-square)](https://github.com/100bench/release-radar/actions/workflows/ci.yml)
-
 Release-Radar — трекер релизов GitHub → уведомления в Telegram.
 Стек: Go, Gin, Postgres, Redis, Docker, Prometheus, OTEL. Worker+API, ETag, идемпотентность.
 
